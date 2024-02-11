@@ -1,4 +1,5 @@
 # Prerequisites
+plasma-gpu
 *.d
 
 # Object files
