@@ -17,7 +17,16 @@
 #define H 200 
 #define DROP_SIZE 100
 
-Shader shader;
+#define MODE_PLASMA 0
+#define MODE_CURTAINS 1
+#define MODE_METABALLS_RGB 2
+#define MODE_METABALLS_HSV 3
+#define MODE_METABALLS_WAVY_HSV 4
+#define MODE_MAX 2
+int mode = MODE_PLASMA;
+
+
+Shader shader[MODE_MAX];
 int timeLoc; 
 int wLoc;
 int hLoc;
@@ -34,11 +43,28 @@ void main_loop_body()
         }
     }
 
+    if (IsKeyDown(KEY_SPACE)) {
+        WaitTime(.2);
+        mode++;
+        if (mode >= MODE_MAX) {
+            mode = MODE_PLASMA;
+        }
+    }
+
+    timeLoc = GetShaderLocation(shader[mode], "time");
+    wLoc = GetShaderLocation(shader[mode], "W");
+    hLoc = GetShaderLocation(shader[mode], "H");
+
     float time = GetTime();
-    SetShaderValue(shader, timeLoc, &time, SHADER_UNIFORM_FLOAT);
+    float w = W;
+    float h = H;
+    SetShaderValue(shader[mode], timeLoc, &time, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(shader[mode], wLoc, &w, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(shader[mode], hLoc, &h, SHADER_UNIFORM_FLOAT);
 
     BeginDrawing();
-        BeginShaderMode(shader);
+        BeginShaderMode(shader[mode]);
+            ClearBackground(WHITE);
             Rectangle source = {0, 0, W, H};
             Rectangle dest = {0, 0, GetRenderWidth(), GetRenderHeight()};
             Vector2 origin = {0, 0};
@@ -53,19 +79,10 @@ int main(int argc, char * argv[])
 
     InitWindow(W, H, "gpu plasma");
     
-    shader = LoadShader(0, TextFormat("resources/plasma_%i.fs", GLSL_VERSION));
+    shader[MODE_PLASMA] = LoadShader(0, TextFormat("resources/plasma_%i.fs", GLSL_VERSION));
+    shader[MODE_CURTAINS] = LoadShader(0, TextFormat("resources/curtains_%i.fs", GLSL_VERSION));
     target = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
-    
-    timeLoc = GetShaderLocation(shader, "time");
-    wLoc = GetShaderLocation(shader, "W");
-    hLoc = GetShaderLocation(shader, "H");
 
-    float time = GetTime();
-    float w = W;
-    float h = H;
-    SetShaderValue(shader, timeLoc, &time, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(shader, wLoc, &w, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(shader, hLoc, &h, SHADER_UNIFORM_FLOAT);
 
 #if defined(PLATFORM_WEB)
     emscripten_set_main_loop(main_loop_body, 120, 1);
