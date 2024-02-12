@@ -22,6 +22,8 @@
 
 const int num_blocks = 20;
 int show_buttons = 1;
+float add_block_distance = 1;
+float add_plasma_distance = 0;
 
 enum shader_enum{
     shader_enum_plasma = 0,
@@ -83,7 +85,7 @@ void draw_bird_block_pattern()
                     float d1 = dist(x, z, sinf(t), sinf(y));
                     float d2 = dist(z, x, sinf(t), sinf(x));
                     float d3 = dist(x - z, z + x, sinf(t), sinf(y));
-                    float d = sinf(d1) + sinf(d2) + sinf(d3) * 30.f;
+                    float d = sinf(d1) + sinf(d2) + sinf(d3) * 30.f * add_block_distance;
 
                     Vector3 cube_pos = {
                         (float)(x - num_blocks / 2) * d / 10.f + d,
@@ -104,6 +106,7 @@ void draw_bird_block_pattern()
                             break;
                     }
 
+                    DrawCubeWires(cube_pos, 1.f, 1.f, 1.f, cube_color);
                     DrawCube(cube_pos, 1.f, 1.f, 1.f, cube_color);
                     //DrawLine3D(cube_pos, lastPos, cube_color);
                     //lastPos = cube_pos;
@@ -135,7 +138,7 @@ void draw_plasma_block_pattern()
                     float d1 = dist(x, y, W / 7.0, H / 3.0);
                     float d2 = d1;
                     float d3 = d1;
-                    float d = sinf(d1) + sinf(d2) + sinf(d3);
+                    float d = sinf(d1) + sinf(d2) + sinf(d3) * add_block_distance;
 
                     Vector3 cube_pos = {
                         (float)(x - num_blocks / 2) * d + d,
@@ -155,6 +158,7 @@ void draw_plasma_block_pattern()
                             cube_color = ColorFromHSV(fabs(cosf(d / 5.f)) * 300, 1.f, .9f);
                     }
 
+                    DrawCubeWires(cube_pos, 1.f, 1.f, 1.f, BLACK);
                     DrawCube(cube_pos, 1.f, 1.f, 1.f, cube_color);
                     //DrawLine3D(cube_pos, lastPos, cube_color);
                     //lastPos = cube_pos;
@@ -182,8 +186,7 @@ void draw_block_pattern()
 
 void gui_draw_handle_events()
 {
-    if (IsKeyDown(KEY_F)) {
-        WaitTime(.2);
+    if (IsKeyPressed(KEY_F)) {
         if (IsWindowFullscreen()) {
             RestoreWindow();
         } else {
@@ -191,17 +194,15 @@ void gui_draw_handle_events()
         }
     }
 
-    if (IsKeyDown(KEY_B)) {
-        WaitTime(.2);
+    if (IsKeyPressed(KEY_B)) {
         show_buttons ^= 1;
     }
 
     const int bw = 100;
     const int bh = 30;
-    Rectangle bounds = { 0, 0 + 60, bw, bh };
-    if (IsKeyDown(KEY_SPACE) || (show_buttons && GuiButton(bounds, "Next Plasma"))) {
+    Rectangle bounds = { GetRenderWidth() - 300, 0 + 20, bw, bh };
+    if (IsKeyPressed(KEY_SPACE) || (show_buttons && GuiButton(bounds, "Next Plasma"))) {
 
-        WaitTime(.2);
         shader_index++;
         if (shader_index >= shader_enum_count) {
             shader_index = shader_enum_plasma;;
@@ -210,8 +211,7 @@ void gui_draw_handle_events()
     }
 
     bounds.y += 40;
-    if (IsKeyDown(KEY_ENTER) || (show_buttons && GuiButton(bounds, "Next Block"))) {
-        WaitTime(.2);
+    if (IsKeyPressed(KEY_ENTER) || (show_buttons && GuiButton(bounds, "Next Block"))) {
         block_pattern++;
         if (block_pattern >= block_pattern_enum_count) {
             block_pattern = block_pattern_enum_plasma;;
@@ -223,6 +223,13 @@ void gui_draw_handle_events()
     if (show_buttons && GuiButton(bounds, "Hide Buttons")) {
         show_buttons = 0;
     }
+
+    if (show_buttons) {
+        bounds.y += 40;
+        bounds.width *= 2;
+        GuiSlider(bounds, "LESS", "MORE", &add_block_distance, 0.0f, 10.0f);
+    }
+
 }
 
 void main_loop_body()
