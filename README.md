@@ -1,9 +1,9 @@
 # plasma-gpu
-Plasma shader using raylib
+Plasma shader using raylib<br>
 
-F - Fullscreen
-Enter - Change block pattern
-Space - Change plasma pattern
+F - Fullscreen<br>
+Enter - Change block pattern<br>
+Space - Change plasma pattern<br>
 
 ![screenshot](https://github.com/diatribes/plasma-gpu/blob/main/screenrec001.gif?raw=true)
 
