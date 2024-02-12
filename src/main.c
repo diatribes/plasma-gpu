@@ -6,6 +6,9 @@
 #include "raylib.h"
 #include "rlgl.h"
 
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
+
 #if defined(PLATFORM_WEB)
     #include <emscripten/emscripten.h>
     #define GLSL_VERSION 100
@@ -17,7 +20,7 @@
 #define W 800
 #define H 450
 
-const int num_blocks = 25;
+const int num_blocks = 20;
 
 enum shader_enum{
     shader_enum_plasma = 0,
@@ -174,7 +177,7 @@ void draw_block_pattern()
     }
 }
 
-void main_loop_body()
+void gui_draw_handle_events()
 {
     if (IsKeyDown(KEY_F)) {
         WaitTime(.2);
@@ -185,21 +188,32 @@ void main_loop_body()
         }
     }
 
-    if (IsKeyDown(KEY_SPACE)) {
+    const int bw = 100;
+    const int bh = 30;
+    Rectangle bounds = { 0, 0 + 60, bw, bh };
+    if (IsKeyDown(KEY_SPACE) || GuiButton(bounds, "Next Plasma")) {
+
         WaitTime(.2);
         shader_index++;
         if (shader_index >= shader_enum_count) {
             shader_index = shader_enum_plasma;;
         }
+
     }
 
-    if (IsKeyDown(KEY_ENTER)) {
+    bounds.y += 40;
+    if (IsKeyDown(KEY_ENTER) || GuiButton(bounds, "Next Block")) {
         WaitTime(.2);
         block_pattern++;
         if (block_pattern >= block_pattern_enum_count) {
             block_pattern = block_pattern_enum_plasma;;
         }
     }
+
+}
+
+void main_loop_body()
+{
 
     timeLoc = GetShaderLocation(shader[shader_index], "time");
     wLoc = GetShaderLocation(shader[shader_index], "W");
@@ -215,6 +229,7 @@ void main_loop_body()
     BeginDrawing();
         draw_shader();
         draw_block_pattern();
+        gui_draw_handle_events();
         DrawFPS(10, 10);
     EndDrawing();
 }
@@ -223,6 +238,7 @@ int main(int argc, char * argv[])
 {
 
     InitWindow(W, H, "gpu plasma");
+    //GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
     
     shader[shader_enum_plasma] = LoadShader(0, TextFormat("resources/plasma_%i.fs", GLSL_VERSION));
     shader[shader_enum_curtains] = LoadShader(0, TextFormat("resources/curtains_%i.fs", GLSL_VERSION));
@@ -239,12 +255,12 @@ int main(int argc, char * argv[])
 #else
 
     SetTargetFPS(TARGET_FPS);
-    DisableCursor();
+    //DisableCursor();
     ToggleBorderlessWindowed();
     while (!WindowShouldClose()) {
         main_loop_body();
     }
-    EnableCursor();
+    //EnableCursor();
 #endif
 
     CloseWindow();
