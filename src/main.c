@@ -17,10 +17,11 @@
 #endif
 
 #define TARGET_FPS 100
-#define W 800
-#define H 450
+#define W 320
+#define H 200
 
 const int num_blocks = 20;
+int show_buttons = 1;
 
 enum shader_enum{
     shader_enum_plasma = 0,
@@ -31,6 +32,7 @@ enum shader_enum{
 enum block_pattern_enum{
     block_pattern_enum_plasma = 0,
     block_pattern_enum_bird,
+    block_pattern_enum_none,
     block_pattern_enum_count,
 };
 
@@ -172,6 +174,7 @@ void draw_block_pattern()
         case block_pattern_enum_bird:
             draw_bird_block_pattern();
             break;
+        case block_pattern_enum_none:
         default:
             break;
     }
@@ -188,10 +191,15 @@ void gui_draw_handle_events()
         }
     }
 
+    if (IsKeyDown(KEY_B)) {
+        WaitTime(.2);
+        show_buttons ^= 1;
+    }
+
     const int bw = 100;
     const int bh = 30;
     Rectangle bounds = { 0, 0 + 60, bw, bh };
-    if (IsKeyDown(KEY_SPACE) || GuiButton(bounds, "Next Plasma")) {
+    if (IsKeyDown(KEY_SPACE) || (show_buttons && GuiButton(bounds, "Next Plasma"))) {
 
         WaitTime(.2);
         shader_index++;
@@ -202,7 +210,7 @@ void gui_draw_handle_events()
     }
 
     bounds.y += 40;
-    if (IsKeyDown(KEY_ENTER) || GuiButton(bounds, "Next Block")) {
+    if (IsKeyDown(KEY_ENTER) || (show_buttons && GuiButton(bounds, "Next Block"))) {
         WaitTime(.2);
         block_pattern++;
         if (block_pattern >= block_pattern_enum_count) {
@@ -210,6 +218,11 @@ void gui_draw_handle_events()
         }
     }
 
+
+    bounds.y += 40;
+    if (show_buttons && GuiButton(bounds, "Hide Buttons")) {
+        show_buttons = 0;
+    }
 }
 
 void main_loop_body()
