@@ -4,6 +4,7 @@
 #include <string.h>
 #include <math.h>
 #include "raylib.h"
+#include "rlgl.h"
 
 #if defined(PLATFORM_WEB)
     #include <emscripten/emscripten.h>
@@ -13,24 +14,165 @@
 #endif
 
 #define TARGET_FPS 100
-#define W 200 
-#define H 200 
-#define DROP_SIZE 100
+#define W 800
+#define H 450
 
-#define MODE_PLASMA 0
-#define MODE_CURTAINS 1
-#define MODE_METABALLS_RGB 2
-#define MODE_METABALLS_HSV 3
-#define MODE_METABALLS_WAVY_HSV 4
-#define MODE_MAX 2
-int mode = MODE_PLASMA;
+const int num_blocks = 25;
 
+enum shader_enum{
+    shader_enum_plasma = 0,
+    shader_enum_curtains,
+    shader_enum_count,
+};
 
-Shader shader[MODE_MAX];
+enum block_pattern_enum{
+    block_pattern_enum_plasma = 0,
+    block_pattern_enum_bird,
+    block_pattern_enum_count,
+};
+
+Shader shader[shader_enum_count];
+int shader_index = shader_enum_plasma;
+int block_pattern = block_pattern_enum_plasma;
 int timeLoc; 
 int wLoc;
 int hLoc;
+
 RenderTexture2D target;
+Camera3D camera = { 0 };
+
+extern inline float dist(float x1, float y1, float x2, float y2)
+{
+    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+}
+
+void draw_shader()
+{
+    BeginShaderMode(shader[shader_index]);
+        ClearBackground(WHITE);
+        Rectangle source = {0, 0, W, H};
+        Rectangle dest = {0, 0, GetRenderWidth(), GetRenderHeight()};
+        Vector2 origin = {0, 0};
+        DrawTexturePro(target.texture, source, dest, origin, 0.0, WHITE);
+    EndShaderMode();
+}
+
+void draw_bird_block_pattern()
+{
+    float time = GetTime();
+
+    float cameraTime = time*0.4;
+    camera.position.x = 30.f + (float)cosf(cameraTime)*90.0f;
+    camera.position.z = 30.f + (float)sinf(cameraTime)*300.0f;
+
+    BeginMode3D(camera);
+
+        //Vector3 lastPos = {0, 0, 0};
+        for (int x = 0; x < num_blocks; x++)
+        {
+            for (int y = 0; y < num_blocks; y++)
+            {
+                for (int z = 0; z < num_blocks; z++)
+                {
+                    float t = time / 10.f;
+                    float d1 = dist(x, z, sinf(t), sinf(y));
+                    float d2 = dist(z, x, sinf(t), sinf(x));
+                    float d3 = dist(x - z, z + x, sinf(t), sinf(y));
+                    float d = sinf(d1) + sinf(d2) + sinf(d3) * 30.f;
+
+                    Vector3 cube_pos = {
+                        (float)(x - num_blocks / 2) * d / 10.f + d,
+                        (float)(y * cosf(t * 20.f) * d / 12.f) * d / 20.f + d,
+                        (float)(z - num_blocks/ 2 ) * d / 10.f + d
+                    };
+
+                    Color cube_color;
+                    switch(shader_index) {
+                        case shader_enum_plasma:
+                            cube_color = ColorFromHSV((float)(((x + y + z)*18)%360), 1.f, .9f);
+                            break;
+                        case shader_enum_curtains:
+                            cube_color = ColorFromHSV(fabs(cosf(d / 23.f)) * 300, 1.f, .9f);
+                            break;
+                        default:
+                            cube_color = ColorFromHSV(fabs(cosf(d / 23.f)) * 300, 1.f, .9f);
+                            break;
+                    }
+
+                    DrawCube(cube_pos, 1.f, 1.f, 1.f, cube_color);
+                    //DrawLine3D(cube_pos, lastPos, cube_color);
+                    //lastPos = cube_pos;
+                }
+            }
+        }
+
+    EndMode3D();
+}
+
+
+void draw_plasma_block_pattern()
+{
+    float time = GetTime();
+
+    camera.position.x = 30.f + (float)cosf(time)*93.0f;
+    camera.position.z = 30.f + (float)sinf(time)*80.0f;
+
+    BeginMode3D(camera);
+
+        //Vector3 lastPos = {0, 0, 0};
+        for (int x = 0; x < num_blocks; x++)
+        {
+            for (int y = 0; y < num_blocks; y++)
+            {
+                for (int z = 0; z < num_blocks; z++)
+                {
+                    float t = time / 10.f;
+                    float d1 = dist(x, y, W / 7.0, H / 3.0);
+                    float d2 = d1;
+                    float d3 = d1;
+                    float d = sinf(d1) + sinf(d2) + sinf(d3);
+
+                    Vector3 cube_pos = {
+                        (float)(x - num_blocks / 2) * d + d,
+                        (float)(y * sin(cosf(t * 20.f + sin(t * 3.0) + sin(x + y + z)) * d)) + d,
+                        (float)(z - num_blocks/ 2 ) * d + d,
+                    };
+
+                    Color cube_color;
+                    switch(shader_index) {
+                        case shader_enum_plasma:
+                            cube_color = ColorFromHSV((float)(((x + y + z)*18)%360), 1.f, .9f);
+                            break;
+                        case shader_enum_curtains:
+                            cube_color = ColorFromHSV(fabs(cosf(d / 5.f)) * 300, 1.f, .9f);
+                            break;
+                        default:
+                            cube_color = ColorFromHSV(fabs(cosf(d / 5.f)) * 300, 1.f, .9f);
+                    }
+
+                    DrawCube(cube_pos, 1.f, 1.f, 1.f, cube_color);
+                    //DrawLine3D(cube_pos, lastPos, cube_color);
+                    //lastPos = cube_pos;
+                }
+            }
+        }
+
+    EndMode3D();
+}
+
+void draw_block_pattern()
+{
+    switch(block_pattern) {
+        case block_pattern_enum_plasma:
+            draw_plasma_block_pattern();
+            break;
+        case block_pattern_enum_bird:
+            draw_bird_block_pattern();
+            break;
+        default:
+            break;
+    }
+}
 
 void main_loop_body()
 {
@@ -45,32 +187,35 @@ void main_loop_body()
 
     if (IsKeyDown(KEY_SPACE)) {
         WaitTime(.2);
-        mode++;
-        if (mode >= MODE_MAX) {
-            mode = MODE_PLASMA;
+        shader_index++;
+        if (shader_index >= shader_enum_count) {
+            shader_index = shader_enum_plasma;;
         }
     }
 
-    timeLoc = GetShaderLocation(shader[mode], "time");
-    wLoc = GetShaderLocation(shader[mode], "W");
-    hLoc = GetShaderLocation(shader[mode], "H");
+    if (IsKeyDown(KEY_ENTER)) {
+        WaitTime(.2);
+        block_pattern++;
+        if (block_pattern >= block_pattern_enum_count) {
+            block_pattern = block_pattern_enum_plasma;;
+        }
+    }
+
+    timeLoc = GetShaderLocation(shader[shader_index], "time");
+    wLoc = GetShaderLocation(shader[shader_index], "W");
+    hLoc = GetShaderLocation(shader[shader_index], "H");
 
     float time = GetTime();
     float w = W;
     float h = H;
-    SetShaderValue(shader[mode], timeLoc, &time, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(shader[mode], wLoc, &w, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(shader[mode], hLoc, &h, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(shader[shader_index], timeLoc, &time, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(shader[shader_index], wLoc, &w, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(shader[shader_index], hLoc, &h, SHADER_UNIFORM_FLOAT);
 
     BeginDrawing();
-        BeginShaderMode(shader[mode]);
-            ClearBackground(WHITE);
-            Rectangle source = {0, 0, W, H};
-            Rectangle dest = {0, 0, GetRenderWidth(), GetRenderHeight()};
-            Vector2 origin = {0, 0};
-            DrawTexturePro(target.texture, source, dest, origin, 0.0, WHITE);
-        EndShaderMode();
-
+        draw_shader();
+        draw_block_pattern();
+        DrawFPS(10, 10);
     EndDrawing();
 }
 
@@ -79,10 +224,15 @@ int main(int argc, char * argv[])
 
     InitWindow(W, H, "gpu plasma");
     
-    shader[MODE_PLASMA] = LoadShader(0, TextFormat("resources/plasma_%i.fs", GLSL_VERSION));
-    shader[MODE_CURTAINS] = LoadShader(0, TextFormat("resources/curtains_%i.fs", GLSL_VERSION));
+    shader[shader_enum_plasma] = LoadShader(0, TextFormat("resources/plasma_%i.fs", GLSL_VERSION));
+    shader[shader_enum_curtains] = LoadShader(0, TextFormat("resources/curtains_%i.fs", GLSL_VERSION));
     target = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
+    camera.position = (Vector3){ 30.0f, 25.0f, 30.0f }; // Camera position
+    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
+    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+    camera.fovy = 80.0f;                                // Camera field-of-view Y
+    camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
 
 #if defined(PLATFORM_WEB)
     emscripten_set_main_loop(main_loop_body, 120, 1);
@@ -100,3 +250,4 @@ int main(int argc, char * argv[])
     CloseWindow();
     return 0;
 }
+

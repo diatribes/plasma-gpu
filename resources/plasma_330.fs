@@ -25,10 +25,10 @@ vec4 plasma()
     float x = fragTexCoord.x / W;
     float y = fragTexCoord.y / H;
 
-    float d1 = dist(x, y, .3, .8) * 3900.f;
-    float d2 = dist(x, y, .8, .1) * 3300.f;
-    float d3 = dist(x, y, .1, .8) * 3200.f;
-    float d4 = dist(x, y, t / 100.f, t / 100.f)* 3700.f;
+    float d1 = dist(x, y, .3, .8) * W * 12.f;
+    float d2 = dist(x, y, .8, .1) * W * 11.f;
+    float d3 = dist(x, y, .1, .8) * W * 10.f;
+    float d4 = dist(x, y, t / 100.f, t / 100.f)* W * 11.5f;
     value = 0.5 + 0.5 * sin(d1) + sin(d2) + sin(d3) + sin(d4);
 
     float c = value;
