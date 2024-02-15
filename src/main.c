@@ -257,8 +257,7 @@ void main_loop_body()
 int main(int argc, char * argv[])
 {
 
-    InitWindow(W, H, "gpu plasma");
-    //GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
+    InitWindow(W, H, "GPU Plasma");
     
     shader[shader_enum_plasma] = LoadShader(0, TextFormat("resources/plasma_%i.fs", GLSL_VERSION));
     shader[shader_enum_curtains] = LoadShader(0, TextFormat("resources/curtains_%i.fs", GLSL_VERSION));
