@@ -26,25 +26,23 @@ vec3 plasma()
     float v = y * 8.0;
 
 	vec2 uv = fragTexCoord.xy * ((cos(t)*.5+.5+.5)*127.0);
-    float k = cos(t * .9) * (cos(t * .1)*.5+.5) * .83;
-    float l = sin(t * .5) * (cos(t * .7)*.5+.5) * .33;
-    uv *= mat2(k,-l,l,k); // Rotate
-    u = uv.x;
-    v = uv.y;
+    float k = cos(t * .2) * (cos(t * -.1)*.5+.5) * 1.3;
+    float l = sin(t * .1) * (cos(t * .1)*.5+.5) * 1.2;
+    uv *= mat2(k,l,-l,k); // Rotate
+    u = .125 + uv.x / 8.0;
+    v = .125 + uv.y / 8.0;
 
-    float r = sin(sin(t) + .9 + cos(t + sin(u) + cos(v)));
-    float g = sin(t + .7 + cos(v + u));
-    float b = sin(t + .5 + cos(u) + sin(v)) * sin(u * 20.0 * sin(u + v + t)) / (W / 2.0);
+    float r = sin(t + H / 20.0 + sin(t + sin(u) + cos(v)));
+    float g = sin(t + H / 22.0 + sin(u + v) + cos(v - u));
+    float b = sin(t + .5 + cos(u) + sin(v)) * sin(u * 20.0 * sin(u + v + t)) / W;
 
-    r += 1.0 /dist(x, y, r, g);
+    r += abs(dist(x, y, r, g) - cos(t/1000.0));
     g += 1.0/ dist(x, y, g, r) + (sin(t / 70.0) * .5 + .5) / 10.0;
-    b += dist(x, y, r, g) + (sin(t / 170.0) * .5 + .5) / 10.0;
+    b += abs(dist(x, y, r, g) + (sin(t / 170.0) * .5 + .5) / 10.0 - cos(t - 3000.0));
 
-    float value = abs(sin(r) + sin(g) + sin(b) + sin(u) + sin(v)) * 2.0;
-
-    r /= value;
-    g /= value;
-    b /= value;
+    r /= 4.0;
+    g /= 4.0;
+    b /= 2.0;
 
     return vec3 (r, g, b);
 }
@@ -53,4 +51,3 @@ void main()
 {
     finalColor = vec4(plasma(), 1.0);
 }
-

@@ -16,42 +16,26 @@
     #define GLSL_VERSION 330
 #endif
 
-#define TARGET_FPS 100
+#define TARGET_FPS 80
 #define W 320
 #define H 200
-
-const int num_blocks = 20;
-int show_buttons = 1;
-float add_block_distance = 1;
-float add_plasma_distance = 0;
 
 enum shader_enum{
     shader_enum_plasma = 0,
     shader_enum_curtains,
+    shader_enum_plasma_disco,
+    shader_enum_plasma_squares,
     shader_enum_count,
-};
-
-enum block_pattern_enum{
-    block_pattern_enum_plasma = 0,
-    block_pattern_enum_bird,
-    block_pattern_enum_none,
-    block_pattern_enum_count,
 };
 
 Shader shader[shader_enum_count];
 int shader_index = shader_enum_plasma;
-int block_pattern = block_pattern_enum_plasma;
 int timeLoc; 
 int wLoc;
 int hLoc;
 
 RenderTexture2D target;
 Camera3D camera = { 0 };
-
-extern inline float dist(float x1, float y1, float x2, float y2)
-{
-    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-}
 
 void draw_shader()
 {
@@ -64,125 +48,6 @@ void draw_shader()
     EndShaderMode();
 }
 
-void draw_bird_block_pattern()
-{
-    float time = GetTime();
-
-    float cameraTime = time*0.4;
-    camera.position.x = 30.f + (float)cosf(cameraTime)*90.0f;
-    camera.position.z = 30.f + (float)sinf(cameraTime)*300.0f;
-
-    BeginMode3D(camera);
-
-        //Vector3 lastPos = {0, 0, 0};
-        for (int x = 0; x < num_blocks; x++)
-        {
-            for (int y = 0; y < num_blocks; y++)
-            {
-                for (int z = 0; z < num_blocks; z++)
-                {
-                    float t = time / 10.f;
-                    float d1 = dist(x, z, sinf(t), sinf(y));
-                    float d2 = dist(z, x, sinf(t), sinf(x));
-                    float d3 = dist(x - z, z + x, sinf(t), sinf(y));
-                    float d = sinf(d1) + sinf(d2) + sinf(d3) * 30.f * add_block_distance;
-
-                    Vector3 cube_pos = {
-                        (float)(x - num_blocks / 2) * d / 10.f + d,
-                        (float)(y * cosf(t * 20.f) * d / 12.f) * d / 20.f + d,
-                        (float)(z - num_blocks/ 2 ) * d / 10.f + d
-                    };
-
-                    Color cube_color;
-                    switch(shader_index) {
-                        case shader_enum_plasma:
-                            cube_color = ColorFromHSV((float)(((x + y + z)*18)%360), 1.f, .9f);
-                            break;
-                        case shader_enum_curtains:
-                            cube_color = ColorFromHSV(fabs(cosf(d / 23.f)) * 300, 1.f, .9f);
-                            break;
-                        default:
-                            cube_color = ColorFromHSV(fabs(cosf(d / 23.f)) * 300, 1.f, .9f);
-                            break;
-                    }
-
-                    DrawCubeWires(cube_pos, 1.f, 1.f, 1.f, cube_color);
-                    DrawCube(cube_pos, 1.f, 1.f, 1.f, cube_color);
-                    //DrawLine3D(cube_pos, lastPos, cube_color);
-                    //lastPos = cube_pos;
-                }
-            }
-        }
-
-    EndMode3D();
-}
-
-
-void draw_plasma_block_pattern()
-{
-    float time = GetTime();
-
-    camera.position.x = 30.f + (float)cosf(time)*93.0f;
-    camera.position.z = 30.f + (float)sinf(time)*80.0f;
-
-    BeginMode3D(camera);
-
-        //Vector3 lastPos = {0, 0, 0};
-        for (int x = 0; x < num_blocks; x++)
-        {
-            for (int y = 0; y < num_blocks; y++)
-            {
-                for (int z = 0; z < num_blocks; z++)
-                {
-                    float t = time / 10.f;
-                    float d1 = dist(x, y, W / 7.0, H / 3.0);
-                    float d2 = d1;
-                    float d3 = d1;
-                    float d = sinf(d1) + sinf(d2) + sinf(d3) * add_block_distance;
-
-                    Vector3 cube_pos = {
-                        (float)(x - num_blocks / 2) * d + d,
-                        (float)(y * sin(cosf(t * 20.f + sin(t * 3.0) + sin(x + y + z)) * d)) + d,
-                        (float)(z - num_blocks/ 2 ) * d + d,
-                    };
-
-                    Color cube_color;
-                    switch(shader_index) {
-                        case shader_enum_plasma:
-                            cube_color = ColorFromHSV((float)(((x + y + z)*18)%360), 1.f, .9f);
-                            break;
-                        case shader_enum_curtains:
-                            cube_color = ColorFromHSV(fabs(cosf(d / 5.f)) * 300, 1.f, .9f);
-                            break;
-                        default:
-                            cube_color = ColorFromHSV(fabs(cosf(d / 5.f)) * 300, 1.f, .9f);
-                    }
-
-                    DrawCubeWires(cube_pos, 1.f, 1.f, 1.f, BLACK);
-                    DrawCube(cube_pos, 1.f, 1.f, 1.f, cube_color);
-                    //DrawLine3D(cube_pos, lastPos, cube_color);
-                    //lastPos = cube_pos;
-                }
-            }
-        }
-
-    EndMode3D();
-}
-
-void draw_block_pattern()
-{
-    switch(block_pattern) {
-        case block_pattern_enum_plasma:
-            draw_plasma_block_pattern();
-            break;
-        case block_pattern_enum_bird:
-            draw_bird_block_pattern();
-            break;
-        case block_pattern_enum_none:
-        default:
-            break;
-    }
-}
 
 void gui_draw_handle_events()
 {
@@ -193,41 +58,12 @@ void gui_draw_handle_events()
             ToggleBorderlessWindowed();
         }
     }
-
-    if (IsKeyPressed(KEY_B)) {
-        show_buttons ^= 1;
-    }
-
-    const int bw = 100;
-    const int bh = 30;
-    Rectangle bounds = { GetRenderWidth() - 300, 0 + 20, bw, bh };
-    if (IsKeyPressed(KEY_SPACE) || (show_buttons && GuiButton(bounds, "Next Plasma"))) {
-
+    
+    if (IsKeyPressed(KEY_SPACE)) {
         shader_index++;
         if (shader_index >= shader_enum_count) {
             shader_index = shader_enum_plasma;;
         }
-
-    }
-
-    bounds.y += 40;
-    if (IsKeyPressed(KEY_ENTER) || (show_buttons && GuiButton(bounds, "Next Block"))) {
-        block_pattern++;
-        if (block_pattern >= block_pattern_enum_count) {
-            block_pattern = block_pattern_enum_plasma;;
-        }
-    }
-
-
-    bounds.y += 40;
-    if (show_buttons && GuiButton(bounds, "Hide Buttons")) {
-        show_buttons = 0;
-    }
-
-    if (show_buttons) {
-        bounds.y += 40;
-        bounds.width *= 2;
-        GuiSlider(bounds, "LESS", "MORE", &add_block_distance, 0.0f, 10.0f);
     }
 
 }
@@ -248,7 +84,6 @@ void main_loop_body()
 
     BeginDrawing();
         draw_shader();
-        draw_block_pattern();
         gui_draw_handle_events();
         DrawFPS(10, 10);
     EndDrawing();
@@ -261,25 +96,27 @@ int main(int argc, char * argv[])
     
     shader[shader_enum_plasma] = LoadShader(0, TextFormat("resources/plasma_%i.fs", GLSL_VERSION));
     shader[shader_enum_curtains] = LoadShader(0, TextFormat("resources/curtains_%i.fs", GLSL_VERSION));
+    shader[shader_enum_plasma_disco] = LoadShader(0, TextFormat("resources/plasma_disco_%i.fs", GLSL_VERSION));
+    shader[shader_enum_plasma_squares] = LoadShader(0, TextFormat("resources/plasma_squares_%i.fs", GLSL_VERSION));
     target = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
-    camera.position = (Vector3){ 30.0f, 25.0f, 30.0f }; // Camera position
-    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
-    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
-    camera.fovy = 80.0f;                                // Camera field-of-view Y
-    camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
+    camera.position = (Vector3){ 30.0f, 25.0f, 30.0f };
+    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
+    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+    camera.fovy = 80.0f;
+    camera.projection = CAMERA_PERSPECTIVE;
 
 #if defined(PLATFORM_WEB)
-    emscripten_set_main_loop(main_loop_body, 120, 1);
+    emscripten_set_main_loop(main_loop_body, TARGET_FPS, 1);
 #else
 
     SetTargetFPS(TARGET_FPS);
-    //DisableCursor();
+    DisableCursor();
     ToggleBorderlessWindowed();
     while (!WindowShouldClose()) {
         main_loop_body();
     }
-    //EnableCursor();
+    EnableCursor();
 #endif
 
     CloseWindow();
